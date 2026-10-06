@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Corridor Street View — Graph-Based Walkthrough</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚶‍♂️</text></svg>">
+</head>
+<body>
+  <div id="app-container">
+    <!-- Viewport & 3D Street View Scene -->
+    <main class="viewport" id="viewport" role="region" aria-label="Interactive Street View Canvas">
+      <div class="scene-wrapper" id="scene-wrapper">
+        <!-- Dual layers for crossfade & warp transitions -->
+        <div class="panorama-layer layer-current" id="layer-a"></div>
+        <div class="panorama-layer layer-next" id="layer-b"></div>
+      </div>
+
+      <!-- Vignette depth overlay -->
+      <div class="vignette-overlay"></div>
+
+      <!-- Floor Navigation Indicator Ring & Chevrons -->
+      <div class="nav-arrows-container" id="nav-arrows-container">
+        <div class="floor-target-ring" id="floor-target-ring"></div>
+        <div id="nav-arrows"></div>
+      </div>
+    </main>
+
+    <!-- Top Navigation HUD -->
+    <header class="top-bar">
+      <!-- Location Information Card -->
+      <div class="location-card">
+        <div class="location-badge" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+        </div>
+        <div class="location-meta">
+          <div class="location-title" id="loc-title">Loading Corridor...</div>
+          <div class="location-subtitle">
+            <span id="loc-subtitle">Corridor Route</span>
+            <span class="location-tag" id="loc-step-badge">Node 1 of 4</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Utility Actions Toolbar -->
+      <div class="top-actions">
+        <!-- Auto Tour Button -->
+        <button class="hud-btn" id="auto-tour-btn" title="Toggle Auto Walkthrough (Space)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span>Auto Walk</span>
+        </button>
+
+        <!-- Sound Toggle -->
+        <button class="hud-btn" id="sound-toggle-btn" title="Toggle Spatial Audio">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+          <span>Muted</span>
+        </button>
+
+        <!-- Graph View Modal Toggle -->
+        <button class="hud-btn" id="graph-view-btn" title="Inspect Node Graph (G)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+          <span>Graph View</span>
+        </button>
+
+        <!-- Keyboard Shortcuts Info -->
+        <button class="hud-btn hud-btn-icon-only" id="shortcuts-btn" title="Help & Keyboard Shortcuts (?)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </button>
+
+        <!-- Fullscreen Toggle -->
+        <button class="hud-btn hud-btn-icon-only" id="fullscreen-btn" title="Toggle Fullscreen">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Compass Rose -->
+    <div class="compass-widget" id="compass-widget" title="Facing North (Click to reset view)">
+      <div class="compass-dial">
+        <div class="compass-needle-n"></div>
+        <div class="compass-label-n">N</div>
+        <div class="compass-needle-s"></div>
+      </div>
+    </div>
+
+    <!-- Zoom & Reset View Controls (Bottom-Right) -->
+    <div class="view-controls">
+      <div class="view-btn-group">
+        <button class="view-btn" id="zoom-in-btn" title="Zoom In (+)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+        <button class="view-btn" id="zoom-out-btn" title="Zoom Out (-)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+        <button class="view-btn" id="zoom-reset-btn" title="Reset View (0 or Esc)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Interactive Minimap (Bottom-Left) -->
+    <aside class="minimap-wrapper" id="minimap-wrapper">
+      <div class="minimap-thumb-preview" id="minimap-thumb-preview"></div>
+      <div class="minimap-container">
+        <div class="minimap-header">
+          <div class="minimap-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+              <line x1="8" y1="2" x2="8" y2="18"></line>
+              <line x1="16" y1="6" x2="16" y2="22"></line>
+            </svg>
+            <span>Floor Plan Graph</span>
+          </div>
+          <div class="minimap-header-actions">
+            <button class="mini-icon-btn" id="toggle-minimap-btn" title="Toggle Size (M)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <polyline points="9 21 3 21 3 15"></polyline>
+                <line x1="21" y1="3" x2="14" y2="10"></line>
+                <line x1="3" y1="21" x2="10" y2="14"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="minimap-body">
+          <svg class="minimap-canvas" id="minimap-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Bottom Timeline / Step Scrubber -->
+    <nav class="bottom-timeline" aria-label="Route step navigation">
+      <button class="timeline-nav-btn" id="prev-step-btn" title="Step Back (Down Arrow / S)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+
+      <div class="timeline-steps" id="timeline-steps">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+
+      <button class="timeline-nav-btn" id="next-step-btn" title="Step Forward (Up Arrow / W)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Modal: Graph Inspector & Structure -->
+  <div class="modal-backdrop" id="graph-modal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+          <span>Corridor Navigation Graph</span>
+        </h2>
+        <button class="modal-close-btn" aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>This viewer models your images as nodes in a graph. For this corridor, the images form a single linear path connecting Entrance (Node 1) to Alcove (Node 4). You can branch, add rooms, or create multi-directional loops simply by extending the nodes and edges.</p>
+        
+        <!-- Live Node Graph Canvas -->
+        <div class="graph-vis-box">
+          <canvas id="graph-modal-canvas" style="width: 100%; height: 100%; display: block;"></canvas>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
+          <h3 style="font-size: 14px; font-weight: 600; color: #f1f3f4;">Graph Data Schema (CORRIDOR_GRAPH in app.js)</h3>
+          <button class="hud-btn" id="copy-graph-btn" style="padding: 4px 10px; font-size: 12px;">Copy JSON</button>
+        </div>
+        <pre class="graph-code-snippet" id="graph-json-viewer"></pre>
+        <p style="font-size: 12px; color: #9aa0a6;">💡 Tip: You can click directly on the graph nodes in the diagram above to teleport between positions.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Keyboard Shortcuts & Help -->
+  <div class="modal-backdrop" id="shortcuts-modal">
+    <div class="modal-dialog" style="max-width: 520px;">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+            <line x1="6" y1="8" x2="6.01" y2="8"></line>
+            <line x1="10" y1="8" x2="10.01" y2="8"></line>
+            <line x1="14" y1="8" x2="14.01" y2="8"></line>
+            <line x1="18" y1="8" x2="18.01" y2="8"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          <span>Controls & Shortcuts</span>
+        </h2>
+        <button class="modal-close-btn" aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="shortcuts-grid">
+          <div class="shortcut-item">
+            <span>Step Forward</span>
+            <div><span class="kbd-badge">↑</span> or <span class="kbd-badge">W</span></div>
+          </div>
+          <div class="shortcut-item">
+            <span>Step Backward</span>
+            <div><span class="kbd-badge">↓</span> or <span class="kbd-badge">S</span></div>
+          </div>
+          <div class="shortcut-item">
+            <span>Pan / Look Left & Right</span>
+            <div><span class="kbd-badge">←</span> <span class="kbd-badge">→</span> or <span class="kbd-badge">Drag</span></div>
+          </div>
+          <div class="shortcut-item">
+            <span>Zoom In / Out</span>
+            <div><span class="kbd-badge">+</span> <span class="kbd-badge">-</span> or <span class="kbd-badge">Scroll</span></div>
+          </div>
+          <div class="shortcut-item">
+            <span>Reset Camera</span>
+            <div><span class="kbd-badge">0</span> or <span class="kbd-badge">Esc</span></div>
+          </div>
+          <div class="shortcut-item">
+            <span>Toggle Auto Tour</span>
+            <div><span class="kbd-badge">Space</span></div>
+          </div>
+          <div class="shortcut-item">
+            <span>Toggle Minimap Size</span>
+            <div><span class="kbd-badge">M</span></div>
+          </div>
+          <div class="shortcut-item">
+            <span>Graph Inspector</span>
+            <div><span class="kbd-badge">G</span></div>
+          </div>
+          <div class="shortcut-item">
+            <span>Advance (Mouse)</span>
+            <div><span class="kbd-badge">Double Click</span> floor</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
