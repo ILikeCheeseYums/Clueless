@@ -1,52 +1,53 @@
 /* =============================================================================
-   Street View Navigator — Core 3D Perspective & Motion Engine (~75 lines)
+   Street View Navigator — Core 3D Perspective & Motion Engine (~50 lines)
    ============================================================================= */
 
 /* Core Layout & Viewport */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-html, body, #app-container { width: 100%; height: 100%; overflow: hidden; background: #121316; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #f1f3f4; }
+html, body, #app-container { width: 100%; height: 100%; overflow: hidden; background: #0b0c0e; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #f1f3f4; }
 .viewport { position: absolute; inset: 0; overflow: hidden; cursor: grab; background: #0b0c0e; perspective: 1000px; }
 .viewport:active { cursor: grabbing; }
 
-/* Dynamic Pan/Tilt/Zoom Street View Scene */
+/* Dynamic Pan/Tilt/Zoom Street View Scene (100% uncropped by default) */
 .scene-wrapper {
-  transform: translate(-50%, -50%) translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0px) scale(var(--zoom, 1)) rotateY(var(--tilt-y, 0deg)) rotateX(var(--tilt-x, 0deg));
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0px) scale(var(--zoom, 1)) rotateY(var(--tilt-y, 0deg)) rotateX(var(--tilt-x, 0deg));
   transition: transform 0.05s linear;
 }
 .panorama-layer {
   position: absolute; inset: 0; width: 100%; height: 100%;
-  background-position: center; background-repeat: no-repeat; background-size: cover;
-  will-change: transform, opacity, filter; transform-origin: center center;
+  background-position: center; background-repeat: no-repeat;
+  background-size: contain; /* Default: uncropped fit */
+  transition: opacity 0.2s ease-in-out;
+  will-change: opacity;
 }
-.layer-current { z-index: 1; }
+body.fill-mode .panorama-layer {
+  background-size: cover; /* Fill screen mode */
+}
+.panorama-layer.is-panorama {
+  background-size: auto 100% !important;
+  background-repeat: repeat-x !important;
+  background-position-x: calc(50% + var(--pano-x, 0px)) !important;
+  background-position-y: center !important;
+}
+.layer-current { z-index: 1; opacity: 1; }
 .layer-next { z-index: 2; opacity: 0; pointer-events: none; }
 
-/* Authentic Street View Warp Animations */
-.warp-forward-out { animation: warpForwardOut 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-.warp-forward-in { animation: warpForwardIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-.warp-backward-out { animation: warpBackwardOut 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-.warp-backward-in { animation: warpBackwardIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-
-@keyframes warpForwardOut { 0% { transform: scale(1); opacity: 1; filter: blur(0); } 100% { transform: scale(1.35); opacity: 0; filter: blur(5px); } }
-@keyframes warpForwardIn { 0% { transform: scale(0.78); opacity: 0; filter: blur(4px); } 100% { transform: scale(1); opacity: 1; filter: blur(0); } }
-@keyframes warpBackwardOut { 0% { transform: scale(1); opacity: 1; filter: blur(0); } 100% { transform: scale(0.72); opacity: 0; filter: blur(4px); } }
-@keyframes warpBackwardIn { 0% { transform: scale(1.3); opacity: 0; filter: blur(5px); } 100% { transform: scale(1); opacity: 1; filter: blur(0); } }
-
 /* Vignette depth overlay */
-.vignette-overlay { background: radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.45) 100%); }
+.vignette-overlay { background: radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.4) 100%); }
 
-/* 3D Floor Navigation Chevrons (Static, No Animations) */
+/* 3D Floor Navigation Chevrons */
 .streetview-arrow {
-  position: absolute; pointer-events: auto; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  position: absolute; pointer-events: auto; cursor: pointer; display: flex; flex-direction: column; align-items: center;
   transform-style: preserve-3d;
 }
-.arrow-forward { bottom: 22%; left: 50%; transform: translateX(-50%) perspective(400px) rotateX(55deg); }
-.arrow-backward { bottom: 84px; left: 50%; transform: translateX(-50%) perspective(400px) rotateX(-50deg); }
-.arrow-right { bottom: 20%; left: 78%; transform: translateX(-50%) perspective(400px) rotateX(55deg) rotateY(-30deg); }
-.arrow-left { bottom: 20%; left: 22%; transform: translateX(-50%) perspective(400px) rotateX(55deg) rotateY(30deg); }
+.arrow-forward { bottom: 18%; left: 50%; transform: translateX(-50%) perspective(400px) rotateX(55deg); }
+.arrow-backward { bottom: 36px; left: 50%; transform: translateX(-50%) perspective(400px) rotateX(-50deg); }
+.arrow-right { bottom: 18%; left: 70%; transform: translateX(-50%) perspective(400px) rotateX(55deg) rotateY(-30deg); }
+.arrow-left { bottom: 18%; left: 30%; transform: translateX(-50%) perspective(400px) rotateX(55deg) rotateY(30deg); }
 
 .arrow-disc {
-  position: relative; width: 70px; height: 70px; border-radius: 50%;
+  position: relative; width: 68px; height: 68px; border-radius: 50%;
   background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(240,244,255,0.85) 60%, rgba(26,115,232,0.4) 100%);
   border: 3px solid rgba(255,255,255,0.9); box-shadow: 0 0 20px rgba(26,115,232,0.6), inset 0 2px 4px #fff, 0 10px 25px rgba(0,0,0,0.4);
   display: flex; align-items: center; justify-content: center; color: #1a73e8;
@@ -57,16 +58,9 @@ html, body, #app-container { width: 100%; height: 100%; overflow: hidden; backgr
 }
 .arrow-disc svg { width: 34px; height: 34px; stroke-width: 3; }
 
-.arrow-tooltip {
-  background: rgba(18, 19, 22, 0.88); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.12); color: #fff; padding: 5px 14px; border-radius: 9999px;
-  font-size: 12px; font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0.88;
-}
-.streetview-arrow:hover .arrow-tooltip { opacity: 1; background: #1a73e8; }
-
-/* Floor Target Ring (Static) */
+/* Floor Target Ring */
 .floor-target-ring {
-  position: absolute; left: 50%; bottom: 22%; transform: translateX(-50%) perspective(400px) rotateX(65deg);
+  position: absolute; left: 50%; bottom: 18%; transform: translateX(-50%) perspective(400px) rotateX(65deg);
   width: 140px; height: 140px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.25);
   background: radial-gradient(circle, rgba(26,115,232,0.15) 0%, transparent 70%); pointer-events: none; opacity: 0.5;
 }
