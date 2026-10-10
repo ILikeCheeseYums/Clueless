@@ -44,7 +44,7 @@ export function parseItem(item) {
  * @param {Array} inputList - Array of raw image items.
  * @returns {Object} An object containing `{ nodes, edges }` to be used by the navigation engine.
  */
-export function buildGraphFromNomenclature(inputList) {
+export function buildGraphFromNomenclature(inputList = []) {
   const nodes = [], edges = [];
   const parsed = inputList.map(parseItem);
 
