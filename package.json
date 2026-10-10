@@ -1,0 +1,34 @@
+{
+  "name": "clueless",
+  "version": "1.0.0",
+  "description": "A lightweight, Google Street View–style 3D perspective corridor walker with an **autonomous graph engine**, **360° panorama support**, clean transitions, spatial audio, and an interactive SVG minimap.",
+  "main": "app.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ILikeCheeseYums/Clueless.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/ILikeCheeseYums/Clueless/issues"
+  },
+  "homepage": "https://github.com/ILikeCheeseYums/Clueless#readme",
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^6.1.2",
+    "lucide-react": "^1.54.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-dropzone": "^20.1.2",
+    "react-use": "^17.6.1",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.4"
+  }
+}
