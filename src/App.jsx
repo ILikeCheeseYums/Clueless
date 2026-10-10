@@ -2,30 +2,25 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useFullscreen, useToggle } from 'react-use';
 import { Maximize, Minimize, Expand, Shrink, ZoomIn, ZoomOut, Target } from 'lucide-react';
 
-import { buildGraphFromNomenclature, checkPanorama, parseItem } from './utils/graph';
+import { buildGraphFromNomenclature, parseItem } from './utils/graph';
 import { playAudio } from './utils/audio';
 
 /**
- * Fallback baseline path images representing the default navigation tour.
- */
-const DEFAULT_IMAGES = [
-  "/Dummy_imgs/1A-F.jpeg",
-  "/Dummy_imgs/2A-F.jpeg",
-  "/Dummy_imgs/3A-F.jpeg",
-  "/Dummy_imgs/4A-F.jpeg",
-  "/Dummy_imgs/5A-L.jpeg"
-];
-
-/**
- * Initializes the default image store by parsing the default paths.
+ * Initializes the default image store by dynamically scanning the public directory.
  * @returns {Map} A map linking node IDs to their parsed data.
  */
 function initDefaultImages() {
   const map = new Map();
-  DEFAULT_IMAGES.forEach(img => {
-    const parsed = parseItem(img);
+  // Dynamically discover all images in the public/Dummy_imgs folder at build/dev time
+  const files = import.meta.glob('/public/Dummy_imgs/*.{jpeg,jpg,png,webp}', { eager: true });
+  
+  Object.keys(files).forEach(key => {
+    // Vite serves the /public folder at the root level, so we strip '/public' for the actual URL
+    const publicUrl = key.replace(/^\/public/, '');
+    const parsed = parseItem(publicUrl);
     map.set(parsed.id, parsed);
   });
+  
   return map;
 }
 
@@ -63,31 +58,6 @@ export default function App() {
   const isPano = currentNode && currentNode.isPanorama;
 
   /**
-   * Initialization Effect:
-   * Asynchronously checks the aspect ratios of all images in the active graph
-   * to determine if they are 360° panoramas. Triggers a graph state update
-   * ONLY if unclassified panoramas were discovered to avoid infinite loops.
-   */
-  useEffect(() => {
-    let needsUpdate = false;
-    const checks = graph.nodes.map(n => {
-      const i = new Image();
-      i.src = n.image;
-      if (n.isPanorama === undefined) {
-        needsUpdate = true;
-        return checkPanorama(n); // Sets n.isPanorama directly on the object
-      }
-      return Promise.resolve();
-    });
-    
-    Promise.all(checks).then(() => {
-      if (needsUpdate) {
-        setGraph(g => ({...g})); // Force React re-render with updated panorama flags
-      }
-    });
-  }, [graph]);
-
-  /**
    * Mount Effect:
    * Safely mounts the initial background image onto the primary DOM layer.
    * This bridges React with the manual DOM node manipulation used for crossfades.
@@ -109,7 +79,7 @@ export default function App() {
    * @param {string} dir - The direction traveled to hit this node (for audio panning)
    * @param {boolean} force - Bypasses safety checks to force a reload
    */
-  const goTo = async (id, dir = "forward", force = false) => {
+  const goTo = (id, dir = "forward", force = false) => {
     const node = graph.nodes.find(n => n.id === id);
     if (!node) return;
     
@@ -119,9 +89,6 @@ export default function App() {
 
     // Trigger directional audio footstep
     playAudio(dir);
-    
-    // Ensure pano aspect ratio is classified before transition finishes
-    await checkPanorama(node);
     
     // Reset view orientation & update React active state
     setPanoX(0);
@@ -210,36 +177,10 @@ export default function App() {
     };
   }, [isPano]);
 
-  /* =========================================================================
-     Keyboard Bindings (WASD / Arrow Keys)
-     ========================================================================= */
-  useEffect(() => {
-    const onKeyDown = e => {
-      // Isolate available paths from the current node
-      const fwd = graph.edges.find(edge => edge.from === currId && edge.direction === "forward");
-      const bwd = graph.edges.find(edge => edge.from === currId && edge.direction === "backward");
-      const rgt = graph.edges.find(edge => edge.from === currId && edge.direction === "right");
-      const lft = graph.edges.find(edge => edge.from === currId && edge.direction === "left");
-      
-      // Navigate if corresponding path exists
-      if ((e.key === "ArrowUp" || e.key.toLowerCase() === "w") && fwd) goTo(fwd.to, "forward");
-      if ((e.key === "ArrowDown" || e.key.toLowerCase() === "s") && bwd) goTo(bwd.to, "backward");
-      if ((e.key === "ArrowRight" || e.key.toLowerCase() === "d") && rgt) goTo(rgt.to, "right");
-      if ((e.key === "ArrowLeft" || e.key.toLowerCase() === "a") && lft) goTo(lft.to, "left");
-      
-      // Reset view or toggle fill mode
-      if (e.key === "0" || e.key === "Escape") { setPan({x:0, y:0}); setPanoX(0); setZoom(1); }
-      if (e.key.toLowerCase() === "c") toggleFillMode();
-    };
-    
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [currId, graph.edges]);
-
   // Compute available edges leading out of the active node for Chevron rendering
   const out = graph.edges.filter(e => e.from === currId);
   const H = window.innerHeight || 800;
-  const AR = currentNode?.aspectRatio || 3.0;
+  const AR = 2.0; // Assume standard equirectangular aspect ratio for 360 since we don't asynchronously load to check anymore
   const W_rev = H * AR; // Reversible panorama width baseline
 
   return (
@@ -321,7 +262,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Top-Right: Fullscreen toggler */}
+       {/* Top-Right: Fullscreen toggler */}
       <div className="absolute top-4 right-4 z-20 pointer-events-auto">
         <button onClick={() => !document.fullscreenElement ? document.documentElement.requestFullscreen().catch(()=>{}) : document.exitFullscreen().catch(()=>{})} className="p-2.5 rounded-full bg-[#20232a]/90 backdrop-blur-md text-[#f1f3f4] cursor-pointer transition-colors hover:bg-[#2d323c] " title="Toggle Fullscreen">
           {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}

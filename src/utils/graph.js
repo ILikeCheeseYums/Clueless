@@ -32,7 +32,9 @@ export function parseItem(item) {
   const step = parseInt(m[1], 10);
   const branch = m[2].toUpperCase();
   
-  return { id: `${step}${branch}-${turn}`, step, branch, turn, image: imgUrl };
+  const isPano = /pano/i.test(nameStr) || /pano/i.test(imgUrl);
+  
+  return { id: `${step}${branch}-${turn}`, step, branch, turn, image: imgUrl, isPanorama: isPano };
 }
 
 /**
@@ -92,7 +94,7 @@ export function buildGraphFromNomenclature(inputList) {
   branchKeys.forEach(bk => {
     branchMap[bk].forEach(item => {
       const { x, y } = coords[item.id] || { x: 50, y: 50 };
-      nodes.push({ id: item.id, number: item.step, branch: item.branch, turn: item.turn, image: item.image, mapX: x, mapY: y });
+      nodes.push({ id: item.id, number: item.step, branch: item.branch, turn: item.turn, image: item.image, mapX: x, mapY: y, isPanorama: item.isPanorama });
     });
   });
 
@@ -131,33 +133,3 @@ export function buildGraphFromNomenclature(inputList) {
   return { nodes, edges };
 }
 
-/**
- * Inspects an image node to determine if it is a 360° Panorama based on aspect ratio or filename flags.
- * Standard street view cameras produce 2:1 aspect ratio equirectangular images.
- * 
- * @param {Object} node - The node object to inspect
- * @returns {Promise<boolean>} Resolves to true if the image is a panorama.
- */
-export function checkPanorama(node) {
-  return new Promise(res => {
-    // Return cached result if already calculated
-    if (node.isPanorama !== undefined) return res(node.isPanorama);
-    
-    const img = new Image();
-    img.src = node.image;
-    
-    img.onload = () => {
-      const ar = img.naturalWidth / (img.naturalHeight || 1);
-      node.aspectRatio = ar;
-      
-      // Classify as panorama if aspect ratio is ~2:1 (or larger than 1.8) or filename contains 'pano'
-      node.isPanorama = ar >= 1.8 || /pano/i.test(node.id) || /pano/i.test(node.image);
-      res(node.isPanorama);
-    };
-    
-    img.onerror = () => {
-        node.isPanorama = false;
-        res(false);
-    };
-  });
-}
