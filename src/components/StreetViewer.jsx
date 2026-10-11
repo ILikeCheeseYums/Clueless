@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFullscreen, useToggle } from 'react-use';
-import { Maximize, Minimize, Expand, Shrink, ZoomIn, ZoomOut, Target, X } from 'lucide-react';
 
 import { buildGraphFromNomenclature } from '../utils/graph';
 
@@ -212,7 +211,7 @@ export default function StreetViewer({ images = [], onExit }) {
 
         {isPano && (
           <div id="pano-badge" className="absolute top-4 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-full bg-[#20232a]/90 backdrop-blur-md text-[11px] text-[#8ab4f8] font-medium pointer-events-none flex items-center gap-1.5 transition-opacity">
-            <Target className="w-3.5 h-3.5" />
+            <img src="/icons/target.svg" alt="Panorama" className="w-3.5 h-3.5" />
             <span>360° Panorama</span>
           </div>
         )}
@@ -223,7 +222,7 @@ export default function StreetViewer({ images = [], onExit }) {
       {onExit && (
         <div className="absolute top-4 left-4 z-20 pointer-events-auto ui-button">
           <button onClick={onExit} className="p-2.5 rounded-full bg-[#20232a]/90 backdrop-blur-md text-[#f1f3f4] cursor-pointer transition-colors hover:bg-[#2d323c]" title="Exit Viewer">
-            <X className="w-5 h-5" />
+            <img src="/icons/x.svg" alt="Exit" className="w-5 h-5" />
           </button>
         </div>
       )}
@@ -231,24 +230,24 @@ export default function StreetViewer({ images = [], onExit }) {
       {/* Top-Right: Fullscreen toggler */}
       <div className="absolute top-4 right-4 z-20 pointer-events-auto ui-button">
         <button onClick={() => !document.fullscreenElement ? document.documentElement.requestFullscreen().catch(()=>{}) : document.exitFullscreen().catch(()=>{})} className="p-2.5 rounded-full bg-[#20232a]/90 backdrop-blur-md text-[#f1f3f4] cursor-pointer transition-colors hover:bg-[#2d323c] " title="Toggle Fullscreen">
-          {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+          <img src={isFullscreen ? "/icons/minimize.svg" : "/icons/maximize.svg"} alt="Toggle Fullscreen" className="w-4 h-4" />
         </button>
       </div>
 
       {/* Bottom-Right: Controls */}
       <div className="view-controls absolute bottom-6 right-4 flex flex-col gap-2 z-20 pointer-events-auto ui-button">
         <div className="view-btn-group bg-[#20232a]/90 backdrop-blur-md rounded-lg flex flex-col overflow-hidden divide-y divide-white/10">
-          <button onClick={toggleFillMode} className={`w-10 h-10 flex items-center justify-center transition-colors hover:bg-white/15 hover:text-white active:bg-[#1a73e8] ${isFillMode ? 'text-[#8ab4f8]' : 'text-[#f1f3f4]'}`} title="Toggle Fit (No Crop) / Fill Screen">
-            {isFillMode ? <Shrink className="w-4 h-4" /> : <Expand className="w-4 h-4" />}
+          <button onClick={toggleFillMode} className="w-10 h-10 flex items-center justify-center transition-colors hover:bg-white/15 active:bg-[#1a73e8]" title="Toggle Fit (No Crop) / Fill Screen">
+            <img src={isFillMode ? "/icons/shrink.svg" : "/icons/expand.svg"} alt="Toggle Fit" className="w-4 h-4" />
           </button>
-          <button onClick={() => setZoom(z => Math.min(2.4, z + 0.2))} className="w-10 h-10 flex items-center justify-center text-[#f1f3f4] transition-colors hover:bg-white/15 hover:text-white active:bg-[#1a73e8]" title="Zoom In (+)">
-            <ZoomIn className="w-5 h-5" />
+          <button onClick={() => setZoom(z => Math.min(2.4, z + 0.2))} className="w-10 h-10 flex items-center justify-center transition-colors hover:bg-white/15 active:bg-[#1a73e8]" title="Zoom In (+)">
+            <img src="/icons/zoom-in.svg" alt="Zoom In" className="w-5 h-5" />
           </button>
-          <button onClick={() => setZoom(z => Math.max(0.95, z - 0.2))} className="w-10 h-10 flex items-center justify-center text-[#f1f3f4] transition-colors hover:bg-white/15 hover:text-white active:bg-[#1a73e8]" title="Zoom Out (-)">
-            <ZoomOut className="w-5 h-5" />
+          <button onClick={() => setZoom(z => Math.max(0.95, z - 0.2))} className="w-10 h-10 flex items-center justify-center transition-colors hover:bg-white/15 active:bg-[#1a73e8]" title="Zoom Out (-)">
+            <img src="/icons/zoom-out.svg" alt="Zoom Out" className="w-5 h-5" />
           </button>
-          <button onClick={() => { setPan({x:0, y:0}); setPanoX(0); setZoom(1); }} className="w-10 h-10 flex items-center justify-center text-[#f1f3f4] transition-colors hover:bg-white/15 hover:text-white active:bg-[#1a73e8]" title="Reset View">
-            <Target className="w-4 h-4" />
+          <button onClick={() => { setPan({x:0, y:0}); setPanoX(0); setZoom(1); }} className="w-10 h-10 flex items-center justify-center transition-colors hover:bg-white/15 active:bg-[#1a73e8]" title="Reset View">
+            <img src="/icons/target.svg" alt="Reset View" className="w-4 h-4" />
           </button>
         </div>
       </div>

@@ -4,8 +4,9 @@
    ============================================================================= */
 
 /* Core Layout & Viewport */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-html, body, #app-container { width: 100%; height: 100%; overflow: hidden; background: #0b0c0e; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #f1f3f4; }
+*, *::before, *::after { box-sizing: border-box; }
+html, body { min-height: 100%; background: #0b0c0e; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #f1f3f4; }
+#app-container { width: 100%; height: 100%; overflow: hidden; }
 .viewport { position: absolute; inset: 0; overflow: hidden; cursor: grab; background: #0b0c0e; perspective: 1000px; }
 .viewport:active { cursor: grabbing; }
 
